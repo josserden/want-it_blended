@@ -1,67 +1,61 @@
 import 'material-icons/iconfont/material-icons.css';
 import './sass/main.scss';
 import { Notify } from 'notiflix';
+import lozad from 'lozad';
+import axios from 'axios';
+import ApiService from './js/apiService';
+
+axios.defaults.baseURL = 'https://pixabay.com/api/';
+const apiKey = '16085264-71307d3f0a6fd2ec26a379ecb';
 
 import refs from './js/refs';
-import ApiService from './js/apiService';
-import BtnService from './js/btnService';
-
 import photoCard from './template/photo-card.hbs';
 
-const { formSearch, imgGallery, loadMoreBtn, loadMoreSpinner, loadMoreLabel } = refs;
-
-const imageService = new ApiService();
-const button = new BtnService({
-  loadMoreBtn: loadMoreBtn,
-  loadMoreLabel: loadMoreLabel,
-  loadMoreSpinner: loadMoreSpinner,
-  classList: 'd-none',
-});
-
-const fetchImg = () => {
-  button.disable();
-  imageService.fetchImg().then(data => {
-    if (data.hits.length === 0) {
-      Notify.warning('Картинок нет');
-      button.hidden();
-      return;
-    }
-    Notify.success(`Супер! Найдено ${data.total} картинок`);
-    imgGallery.insertAdjacentHTML('beforeend', photoCard(data.hits));
-
-    button.show();
-    button.enable();
-
-    imgGallery.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
-    });
-
-    // const { height: cardHeight } = imgGallery.firstElementChild.getBoundingClientRect();
-
-    // window.scrollBy({
-    //   top: cardHeight * 2,
-    //   behavior: 'smooth',
-    // });
-  });
-};
-
-const searchImg = event => {
-  event.preventDefault();
-  clearImgGallery();
-
-  const userRequest = event.currentTarget.elements.query.value.trim();
-
-  imageService.query = userRequest;
-
-  fetchImg();
-
-  formSearch.reset();
-};
+const { formSearch, imgGallery, loader } = refs;
 
 function clearImgGallery() {
   imgGallery.innerHTML = '';
 }
 
-formSearch.addEventListener('submit', searchImg);
-loadMoreBtn.addEventListener('click', fetchImg);
+const fetchImg = () => {
+  ApiService.fetchImg().then(data => {
+    console.log(data);
+    imgGallery.insertAdjacentHTML('beforebegin', photoCard(data.hits));
+  });
+};
+
+formSearch.addEventListener('submit', e => {
+  e.preventDefault();
+  clearImgGallery();
+
+  ApiService.resetPage();
+
+  const userRequest = e.currentTarget.elements.query.value.trim();
+
+  if (!userRequest) return;
+
+  ApiService.query = userRequest;
+
+  fetchImg();
+
+  formSearch.reset();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  let options = {
+    root: null,
+    rootMargin: '100px',
+    threshold: 0.25,
+  };
+
+  function handleIntersect(entries, observer) {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        fetchImg();
+      }
+    });
+  }
+
+  let observer = new IntersectionObserver(handleIntersect, options);
+  observer.observe(loader);
+});

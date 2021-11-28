@@ -4,6 +4,7 @@ const refs = {
   loadMoreBtn: document.querySelector('button[data-action="load-more"]'),
   loadMoreLabel: document.querySelector('button[data-action="load-more"] > .label'),
   loadMoreSpinner: document.querySelector('button[data-action="load-more"] > .spinner'),
+  loader: document.querySelector('#loading'),
 };
 
 export default refs;
